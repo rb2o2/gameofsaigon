@@ -1,17 +1,19 @@
 #! /usr/bin/env python3
 
 # -*- coding: utf-8 -*-
+import math
 import pygame, sys
 from pygame.locals import *
 
 WIDTH = 800
 HEIGHT = 600
-n_big_stars = 2
-n_small_stars = 1
+n_big_stars = 40
+n_small_stars = 100
 heli_y = HEIGHT/2
 big_stars_speed = 0.4
 small_stars_speed = 0.7
 GROUND_Y = 550
+TRACER_LENGTH = 20
 
 flag = True
 up = False
@@ -100,14 +102,13 @@ def drop_bomb():
     bombs.append((100, heli_y + 24, bomb_init_speed))
 
 class explosion(object):
-
-    def __init__(self, x, y, n=20, init_v=0.9):
+    def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi):
         self.particles = []
         self.max_frames = 400.0
         for i in range(n):
-            angle = r.uniform(0,2 * math.pi)
+            angle = r.uniform(-alpha, alpha)
             dev = r.gauss(1.0,0.2)
-            self.particles.append((x,y,math.sin(angle)* init_v*dev,math.cos(angle) * init_v*dev, 0.0))
+            self.particles.append((x, y, math.cos(angle) * init_v * dev, math.sin(angle) * init_v * dev, 0.0))
 
     def fillBlackSurf(self,surf):
         for part in self.particles:
@@ -218,6 +219,17 @@ while True:
     enemies = [(e[0] - 0.3,e[1]) for e in enemies if e[0] > -32]
     for enemy in enemies:
         DISPLAYSURF.blit(MIGSURF, (int(enemy[0]),int(enemy[1])))
+
+    enemies_hit = []
+    for p in projectiles:
+        for mig in enemies:
+            if mig[1] + 4 < p[1] < mig[1] - 4 + 32 and mig[0] + 4 < p[0] + 20 < mig[0] + 24:
+                enemies_hit.append((p, mig))
+    for p, mig in enemies_hit:
+        fillBlack()
+        enemies.remove(mig)
+        projectiles.remove(p)
+        explosions.append(explosion(mig[0] + 4, mig[1] + 16, init_v=0.5, n=200))
 
     heli_y_ += heli_v_y_
     heli_y = int(heli_y_)
