@@ -1,17 +1,17 @@
 #! /usr/bin/env python3
 
 # -*- coding: utf-8 -*-
-
-
 import pygame, sys
 from pygame.locals import *
+
 WIDTH = 800
 HEIGHT = 600
-n_big_stars = 80
+n_big_stars = 40
 n_small_stars = 120
 heli_y = HEIGHT/2
 big_stars_speed = 0.4
 small_stars_speed = 0.7
+
 flag = True
 up = False
 down = False
@@ -22,7 +22,8 @@ pygame.init()
 DISPLAYSURF = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('RETURN TO SAIGON')
 STARSURF = pygame.image.load_basic('star.bmp')
-HELI_SURF = pygame.image.load_basic('copter2.bmp')
+HELISURF = pygame.image.load_basic('copter.bmp')
+MIGSURF = pygame.image.load_basic('Mig15.bmp')
 
 import random
 r = random.Random()
@@ -40,16 +41,36 @@ for i in range(n_small_stars):
 for i in range(n_small_stars):
     DISPLAYSURF.fill(color.Color('Yellow'),pygame.rect.Rect(coords_slow[i][0],coords_slow[i][1],1,1))
 
-DISPLAYSURF.blit(HELI_SURF, (100, heli_y),pygame.rect.Rect(0,0,32,24))
+DISPLAYSURF.blit(HELISURF, (100, heli_y), pygame.rect.Rect(0, 0, 32, 24))
 
 heli_v_y_ = 0.0
 fire = False
 projectiles = []
+enemies = []
+frame_counter = 0
+frame_counter_MAX = 3000
 
 def fillBlack():
-    pass
+    for i in range(n_big_stars):
+        DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(int(coords[i][0]), coords[i][1], 8, 8))
+    for i in range(n_small_stars):
+        DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(int(coords_slow[i][0]), coords_slow[i][1], 1, 1))
+    DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(100, heli_y, 32, 24))
+    for proj in projectiles:
+        DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(proj[0], proj[1], 20, 1))
+    for enemy in enemies:
+        DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(enemy[0],enemy[1], 32, 32))
+
+def launch_enemy():
+    enemy_y = r.randint(20, HEIGHT - 20)
+    enemies.append((WIDTH, enemy_y))
+
 # pygame.Surface.fill
 while True:
+    frame_counter += 1
+    if frame_counter == frame_counter_MAX:
+        launch_enemy()
+        frame_counter = 0
     # main game loop
     if up:
         heli_v_y_ -= 0.015
@@ -59,14 +80,7 @@ while True:
         projectiles.append((135,heli_y+10))
         fire = not fire
 
-    for i in range(n_big_stars):
-        DISPLAYSURF.fill(color.Color('Black'),pygame.rect.Rect(int(coords[i][0]),coords[i][1],8,8))
-    for i in range(n_small_stars):
-        DISPLAYSURF.fill(color.Color('Black'),pygame.rect.Rect(int(coords_slow[i][0]),coords_slow[i][1],1,1))
-    DISPLAYSURF.fill(color.Color('Black'),pygame.rect.Rect(100,heli_y,32,24))
-
-    for proj in projectiles:
-        DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(proj[0],proj[1],4,1))
+    fillBlack()
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -96,7 +110,11 @@ while True:
 
     projectiles = [(p[0] + 3, p[1]) for p in projectiles if p[0] < WIDTH]
     for proj in projectiles:
-        DISPLAYSURF.fill(color.Color('White'), pygame.rect.Rect(proj[0],proj[1], 4, 1))
+        DISPLAYSURF.fill(color.Color('White'), pygame.rect.Rect(proj[0],proj[1], 20, 1))
+
+    enemies = [(e[0] - 0.3,e[1]) for e in enemies if e[0] > - 32]
+    for enemy in enemies:
+        DISPLAYSURF.blit(MIGSURF, (int(enemy[0]),int(enemy[1])))
 
 
     heli_y_ += heli_v_y_
@@ -108,5 +126,5 @@ while True:
     else:
         x = 0
         flag = not flag
-    DISPLAYSURF.blit(HELI_SURF,(100,heli_y),pygame.rect.Rect(x,0,32,24))
+    DISPLAYSURF.blit(HELISURF, (100, heli_y), pygame.rect.Rect(x, 0, 32, 24))
     pygame.display.update()
