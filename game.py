@@ -14,6 +14,8 @@ big_stars_speed = 0.4
 small_stars_speed = 0.7
 GROUND_Y = 550
 TRACER_LENGTH = 20
+particle_size = 2
+BOMBS_MAX = 8
 
 flag = True
 up = False
@@ -37,7 +39,8 @@ r = random.Random()
 
 coords = []
 coords_slow = []
-
+for i in range(BOMBS_MAX):
+    DISPLAYSURF.blit(BOMBSURF, (1 + i * 17, 1))
 for i in range(n_big_stars):
     coords.append((r.randint(20, WIDTH - 20),r.randint(20, GROUND_Y - 20)))
 for i in range(n_big_stars):
@@ -66,7 +69,8 @@ bomb_init_speed = 0.0035
 flame_frame_counter_max = 25
 flame_counter = 0
 shl = 0
-
+ammo = {'bombs_left': BOMBS_MAX}
+print(type(ammo))
 
 for i in range(0,WIDTH -32, 64):
     choice = r.choice(["hut","tree"])
@@ -98,21 +102,25 @@ def launch_enemy():
     enemy_y = r.randint(20, GROUND_Y - 64 - 20)
     enemies.append((WIDTH, enemy_y))
 
-def drop_bomb():
+
+def drop_bomb(ammo):
     bombs.append((100, heli_y + 24, bomb_init_speed))
+    ammo['bombs_left'] -= 1
+    DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(1 + 17 * ammo['bombs_left'], 1, 16, 16))
+
 
 class explosion(object):
-    def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi):
+    def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi, v_x=0.3, max_frames=400.0):
         self.particles = []
-        self.max_frames = 400.0
+        self.max_frames = max_frames
         for i in range(n):
             angle = r.uniform(-alpha, alpha)
             dev = r.gauss(1.0,0.2)
-            self.particles.append((x, y, math.cos(angle) * init_v * dev, math.sin(angle) * init_v * dev, 0.0))
+            self.particles.append((x, y, math.sin(angle) * init_v * dev + v_x, -math.cos(angle) * init_v * dev, 0.0))
 
     def fillBlackSurf(self,surf):
         for part in self.particles:
-            surf.fill(color.Color('Black'),pygame.rect.Rect(int(part[0]),int(part[1]),1,1))
+            surf.fill(color.Color('Black'), pygame.rect.Rect(int(part[0]), int(part[1]), particle_size, particle_size))
 
     def recalcOnSurface(self,surf):
         def blend(x):
@@ -125,7 +133,7 @@ class explosion(object):
                 return pygame.Color(3 * 255 - int(3.0 * x / self.max_frames * 255), 0, 0, 0)
         self.particles = [(p[0]+p[2],p[1]+p[3],p[2]*0.99,p[3]*0.99+0.0001,p[4]+1.0) for p in self.particles if p[4] < self.max_frames]
         for p in self.particles:
-            surf.fill(blend(p[4]),pygame.rect.Rect(int(p[0]),int(p[1]),1,1))
+            surf.fill(blend(p[4]), pygame.rect.Rect(int(p[0]), int(p[1]), particle_size, particle_size))
 
 
 
@@ -153,8 +161,9 @@ while True:
         projectiles.append((135,heli_y+10))
         fire = not fire
     if bomb:
-        drop_bomb()
+        drop_bomb(ammo)
         bomb = not bomb
+
 
     fillBlack()
     for ex in explosions:
@@ -173,7 +182,7 @@ while True:
                 down = False
             if event.key == K_SPACE:
                 fire = True
-            if event.key == K_m:
+            if event.key == K_m and ammo.get('bombs_left') > 0:
                 bomb = True
         if event.type == KEYUP:
             if event.key == K_s:
@@ -195,6 +204,10 @@ while True:
 
     flame_to_append = [(92.0, GROUND_Y - 32) for b in bombs if b[1] > (GROUND_Y - 16)]
     flame = flame + flame_to_append
+    explosions = [ex for ex in explosions if len(ex.particles) > 0 and ex.particles[0][4] < 500.0]
+    bomb_explosion = [explosion(92, GROUND_Y, n=30, init_v=0.6, alpha=math.pi / 3) for b in bombs if
+                      b[1] > (GROUND_Y - 16)]
+    explosions = explosions + bomb_explosion
 
     bombs = [(b[0], b[1]+b[2],min(b[2]+bomb_init_speed,3)) for b in bombs if b[1] < (GROUND_Y - 16)]
     for b in bombs:
@@ -229,7 +242,8 @@ while True:
         fillBlack()
         enemies.remove(mig)
         projectiles.remove(p)
-        explosions.append(explosion(mig[0] + 4, mig[1] + 16, init_v=0.5, n=200))
+        explosions.append(explosion(mig[0] + 4, mig[1] + 16, init_v=0.5, n=80))
+        explosions.append(explosion(mig[0] + 4, mig[1] + 16, init_v=0.1, n=40, max_frames=150))
 
     heli_y_ += heli_v_y_
     heli_y = int(heli_y_)
