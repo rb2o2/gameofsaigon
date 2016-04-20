@@ -92,7 +92,7 @@ def fillBlack():
         DISPLAYSURF.fill(color.Color('Black'), pygame.rect.Rect(int(fl[0]), int(fl[1]), 32, 32))
 
 def launch_enemy():
-    enemy_y = r.randint(20, GROUND_Y - 20)
+    enemy_y = r.randint(20, GROUND_Y - 64 - 20)
     enemies.append((WIDTH, enemy_y))
 
 def drop_bomb():
@@ -151,7 +151,7 @@ while True:
         coords_slow[i] = divmod(coords_slow[i][0]-small_stars_speed, WIDTH)[1], coords_slow[i][1]
         DISPLAYSURF.fill(color.Color('Yellow'),pygame.rect.Rect(int(coords_slow[i][0]),coords_slow[i][1],1,1))
 
-    projectiles = [(p[0] + 3, p[1]) for p in projectiles if p[0] < WIDTH]
+    projectiles = [(p[0] + 3, p[1]) for p in projectiles if p[0] < WIDTH + 20]
     for proj in projectiles:
         DISPLAYSURF.fill(color.Color('White'), pygame.rect.Rect(proj[0],proj[1], 20, 1))
 
@@ -159,7 +159,7 @@ while True:
     flame_to_append = [(92.0, GROUND_Y - 32) for b in bombs if b[1] > (GROUND_Y - 16)]
     flame = flame + flame_to_append
 
-    bombs = [(b[0], b[1]+b[2],min(b[2]+bomb_init_speed,3)) for b in bombs if b[1] < GROUND_Y]
+    bombs = [(b[0], b[1]+b[2],min(b[2]+bomb_init_speed,3)) for b in bombs if b[1] < (GROUND_Y - 16)]
     for b in bombs:
         DISPLAYSURF.blit(BOMBSURF, (int(b[0]),int(b[1])))
 
