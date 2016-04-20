@@ -6,8 +6,8 @@ from pygame.locals import *
 
 WIDTH = 800
 HEIGHT = 600
-n_big_stars = 40
-n_small_stars = 120
+n_big_stars = 2
+n_small_stars = 1
 heli_y = HEIGHT/2
 big_stars_speed = 0.4
 small_stars_speed = 0.7
@@ -59,6 +59,7 @@ hutten = []
 trees = []
 bombs = []
 flame = []
+explosions = []
 bomb_init_speed = 0.0035
 flame_frame_counter_max = 25
 flame_counter = 0
@@ -98,6 +99,39 @@ def launch_enemy():
 def drop_bomb():
     bombs.append((100, heli_y + 24, bomb_init_speed))
 
+class explosion(object):
+
+    def __init__(self, x, y, n=20, init_v=0.9):
+        self.particles = []
+        self.max_frames = 400.0
+        for i in range(n):
+            angle = r.uniform(0,2 * math.pi)
+            dev = r.gauss(1.0,0.2)
+            self.particles.append((x,y,math.sin(angle)* init_v*dev,math.cos(angle) * init_v*dev, 0.0))
+
+    def fillBlackSurf(self,surf):
+        for part in self.particles:
+            surf.fill(color.Color('Black'),pygame.rect.Rect(int(part[0]),int(part[1]),1,1))
+
+    def recalcOnSurface(self,surf):
+        def blend(x):
+
+            if 0.0 <= x < self.max_frames/3:
+                return pygame.Color(255, 255, int(255 - 255 * (x/self.max_frames * 3)), 0)
+            if self.max_frames/3 <= x < 2*self.max_frames/3:
+                return pygame.Color(255, int(2*255 - 255*(x/self.max_frames * 3)),0,0)
+            if 2*self.max_frames/3 <= x <= self.max_frames:
+                return pygame.Color(3 * 255 - int(3.0 * x / self.max_frames * 255), 0, 0, 0)
+        self.particles = [(p[0]+p[2],p[1]+p[3],p[2]*0.99,p[3]*0.99+0.0001,p[4]+1.0) for p in self.particles if p[4] < self.max_frames]
+        for p in self.particles:
+            surf.fill(blend(p[4]),pygame.rect.Rect(int(p[0]),int(p[1]),1,1))
+
+
+
+import math
+
+
+explosions.append(explosion(float(WIDTH/2), float(HEIGHT/2), n=120, init_v=0.32))
 # pygame.Surface.fill
 while True:
     flame_counter += 1
@@ -122,6 +156,8 @@ while True:
         bomb = not bomb
 
     fillBlack()
+    for ex in explosions:
+        ex.fillBlackSurf(DISPLAYSURF)
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -163,12 +199,15 @@ while True:
     for b in bombs:
         DISPLAYSURF.blit(BOMBSURF, (int(b[0]),int(b[1])))
 
-    flame = [(divmod(f[0] - 0.25, WIDTH)[1], f[1]) for f in flame]
+    for x in explosions:
+        x.recalcOnSurface(DISPLAYSURF)
+
+    flame = [(divmod(f[0] - 0.25 + 32, WIDTH + 32)[1] - 32, f[1]) for f in flame]
 
 
 
-    hutten = [(divmod(h[0] - 0.25, WIDTH)[1], h[1]) for h in hutten]
-    trees = [(divmod(t[0] - 0.25, WIDTH)[1], t[1]) for t in trees]
+    hutten = [(divmod(h[0] - 0.25 + 32, WIDTH + 32)[1] - 32, h[1]) for h in hutten]
+    trees = [(divmod(t[0] - 0.25 + 32, WIDTH + 32)[1] - 32, t[1]) for t in trees]
     for h in hutten:
         DISPLAYSURF.blit(HUTSURF, (int(h[0]), int(h[1])))
     for t in trees:
