@@ -6,6 +6,7 @@ import pygame, sys
 import random
 from pygame.locals import *
 
+global counter
 
 class Explosion(object):
     def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi, v_x=0.3, max_frames=400.0, r=random.Random()):
@@ -45,6 +46,8 @@ class Explosion(object):
 
 class Game(object):
     def __init__(self):
+        self.endgame_counter = 0
+        self.endgame = False
         self.WIDTH = 800
         self.HEIGHT = 600
         self.n_big_stars = 40
@@ -62,6 +65,7 @@ class Game(object):
         self.up_flag = False
         self.down_flag = False
         self.heli_y_ = self.heli_y
+        self.heli_x = 100
         self.fire_flag = False
         self.bomb_flag = False
 
@@ -207,7 +211,7 @@ class Game(object):
             )
         self.DISPLAYSURF.blit(
             self.HELISURF,
-            (100, self.heli_y),
+            (self.heli_x, self.heli_y),
             pygame.rect.Rect(0, 0, 32, 24))
 
     def redraw_sprites(self):
@@ -351,20 +355,39 @@ class Game(object):
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.35, n=60, max_frames=300))
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.17, n=30, max_frames=180.0))
 
-        self.heli_y_ += self.heli_v_y_
-        self.heli_y = int(self.heli_y_)
-        self.heli_v_y_ *= 0.96
-        if self.heli_frame_flag:
+        for e in self.sprites['enemies']:
+            if (e[1] - 32 < self.heli_y < e[1] + 24) and (e[0] - 32 < self.heli_x < e[0] + 32):
+                self.endgame = True
+                self.sprites['explosions'] += [
+                    Explosion(self.heli_x + 16, self.heli_y + 12, init_v=0.7, n=250)]
+                self.heli_x = -1
+                self.heli_y = -1
+
+        if not self.endgame:
+            self.heli_y_ += self.heli_v_y_
+            self.heli_y = int(self.heli_y_)
+            self.heli_v_y_ *= 0.96
+        if self.heli_frame_flag and not self.endgame:
             x = 32
             self.heli_frame_flag = not self.heli_frame_flag
-        else:
+        elif not self.endgame:
             x = 0
             self.heli_frame_flag = not self.heli_frame_flag
-        self.DISPLAYSURF.blit(
-            self.HELISURF,
-            (100, self.heli_y),
-            pygame.rect.Rect(x, 0, 32, 24)
-        )
+
+        if not self.endgame:
+            self.DISPLAYSURF.blit(
+                self.HELISURF,
+                (100, self.heli_y),
+                pygame.rect.Rect(x, 0, 32, 24)
+            )
+
+        else:
+            self.endgame_counter += 1
+            if self.endgame_counter > 800:
+                self.ENDGAMESURF = pygame.Surface((self.WIDTH, self.HEIGHT))
+                self.ENDGAMESURF = self.ENDGAMESURF.convert_alpha()
+                self.ENDGAMESURF.fill((128, 0, 0, 128))
+                self.DISPLAYSURF.blit(self.ENDGAMESURF, pygame.rect.Rect(0, 0, self.WIDTH, self.HEIGHT))
 
     def launch_enemy(self):
         enemy_y = self.r.randint(20, self.GROUND_Y - 64 - 20)
@@ -415,14 +438,14 @@ class Game(object):
             if self.flame_counter == self.flame_counter_MAX:
                 self.flame_counter = 0
                 self.shl = 32 - self.shl
-            if self.up_flag:
+            if self.up_flag and not self.endgame:
                 self.heli_v_y_ -= 0.015
-            if self.down_flag:
+            if self.down_flag and not self.endgame:
                 self.heli_v_y_ += 0.015
-            if self.fire_flag:
+            if self.fire_flag and not self.endgame:
                 self.sprites['projectiles'].append((135, self.heli_y + 10))
                 self.fire_flag = not self.fire_flag
-            if self.bomb_flag:
+            if self.bomb_flag and not self.endgame:
                 self.drop_bomb()
                 self.bomb_flag = not self.bomb_flag
 
