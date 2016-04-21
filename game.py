@@ -11,10 +11,11 @@ class Explosion(object):
     def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi, v_x=0.3, max_frames=400.0, r=random.Random()):
         self.particles = []
         self.max_frames = max_frames
+        self.frame = 0
         for i in range(n):
             angle = r.uniform(-alpha, alpha)
-            dev = r.gauss(1.0,0.2)
-            self.particles.append((x, y, math.sin(angle) * init_v * dev + v_x, -math.cos(angle) * init_v * dev, 0.0))
+            dev = r.gauss(1.0, 0.2)
+            self.particles.append((x, y, math.sin(angle) * init_v * dev + v_x, -math.cos(angle) * init_v * dev))
 
     def fill_black_surf(self, surf, particle_size):
         for part in self.particles:
@@ -24,13 +25,22 @@ class Explosion(object):
         def blend(x):
             if 0.0 <= x < self.max_frames/3:
                 return pygame.Color(255, 255, int(255 - 255 * (x/self.max_frames * 3)), 0)
-            if self.max_frames/3 <= x < 2*self.max_frames/3:
-                return pygame.Color(255, int(2*255 - 255*(x/self.max_frames * 3)),0,0)
+            if float(self.max_frames) / 3 <= x < 2. * self.max_frames / 3:
+                return pygame.Color(255, int(2 * 255 - 255.0 * (x / self.max_frames * 3)), 0, 0)
             if 2*self.max_frames/3 <= x <= self.max_frames:
                 return pygame.Color(3 * 255 - int(3.0 * x / self.max_frames * 255), 0, 0, 0)
-        self.particles = [(p[0]+p[2],p[1]+p[3],p[2]*0.99,p[3]*0.99+0.0001,p[4]+1.0) for p in self.particles if p[4] < self.max_frames]
+
+        self.frame += 1.0
+        self.particles = [
+            (p[0] + p[2],
+             p[1] + p[3],
+             p[2] * 0.99,
+             p[3] * 0.99 + 0.0001)
+            for p in self.particles
+            if self.frame < self.max_frames
+            ]
         for p in self.particles:
-            surf.fill(blend(p[4]), pygame.rect.Rect(int(p[0]), int(p[1]), particle_size, particle_size))
+            surf.fill(blend(self.frame), pygame.rect.Rect(int(p[0]), int(p[1]), particle_size, particle_size))
 
 
 class Game(object):
@@ -200,7 +210,7 @@ class Game(object):
             (100, self.heli_y),
             pygame.rect.Rect(0, 0, 32, 24))
 
-    def draw_sprites(self):
+    def redraw_sprites(self):
         for i in range(self.n_big_stars):
             self.sprites['star_coords'][i] = (
                 divmod(
@@ -253,7 +263,7 @@ class Game(object):
 
         self.sprites['explosions'] = [
             ex for ex in self.sprites['explosions']
-            if len(ex.particles) > 0 and ex.particles[0][4] < ex.max_frames
+            if ex.frame < ex.max_frames
             ]
 
         bomb_explosion = [
@@ -402,7 +412,6 @@ class Game(object):
             if self.enemy_frame_counter == self.enemy_frame_counter_MAX:
                 self.launch_enemy()
                 self.enemy_frame_counter = 0
-
             if self.flame_counter == self.flame_counter_MAX:
                 self.flame_counter = 0
                 self.shl = 32 - self.shl
@@ -423,7 +432,7 @@ class Game(object):
 
             self.process_events()
 
-            self.draw_sprites()
+            self.redraw_sprites()
 
             pygame.display.update()
 
