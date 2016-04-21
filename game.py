@@ -47,7 +47,8 @@ class Explosion(object):
 class Game(object):
     def __init__(self):
         self.endgame_counter = 0
-        self.endgame = False
+        self.endgame_lost = False
+        self.endgame_won = False
         self.WIDTH = 800
         self.HEIGHT = 600
         self.n_big_stars = 40
@@ -55,11 +56,13 @@ class Game(object):
         self.heli_y = self.HEIGHT / 2
         self.big_stars_speed = 0.4
         self.small_stars_speed = 0.7
+        self.GROUND_SPEED = 0.25
         self.GROUND_Y = 550
         self.TRACER_LENGTH = 20
         self.particle_size = 2
         self.BOMBS_MAX = 8
         self.r = random.Random()
+        self.gameover_counter = 0
 
         self.heli_frame_flag = True
         self.up_flag = False
@@ -79,11 +82,14 @@ class Game(object):
         self.sprites['explosions'] = []
         self.sprites['star_coords'] = []
         self.sprites['slow_stars_coords'] = []
+        self.clear = False
 
         self.heli_v_y_ = 0.0
         self.enemy_frame_counter = 0
         self.enemy_frame_counter_MAX = 1000
         self.bomb_init_speed = 0.0035
+        self.bullet_speed = 3.5
+        self.mig_speed = 0.63
         self.flame_counter_MAX = 25
         self.flame_counter = 0
         self.shl = 0
@@ -93,13 +99,14 @@ class Game(object):
         self.DISPLAYSURF = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption('RETURN TO SAIGON')
 
-        self.STARSURF = pygame.image.load_basic('star.bmp')
-        self.HELISURF = pygame.image.load_basic('copter.bmp')
-        self.MIGSURF = pygame.image.load_basic('Mig15.bmp')
-        self.HUTSURF = pygame.image.load_basic('hut.bmp')
-        self.PALMSURF = pygame.image.load_basic('palmTree.bmp')
-        self.BOMBSURF = pygame.image.load_basic('bomb.bmp')
-        self.FLAMESURF = pygame.image.load_basic('flame.bmp')
+        # self.STARSURF = pygame.image.load_extended('star.bmp')
+        self.HELISURF = pygame.image.load_extended('copter.png')
+        self.MIGSURF = pygame.image.load_extended('Mig15.png')
+        self.HUTSURF = pygame.image.load_extended('hut.png')
+        self.PALMSURF = pygame.image.load_extended('palmTree.png')
+        self.BOMBSURF = pygame.image.load_extended('bomb.png')
+        self.FLAMESURF = pygame.image.load_extended('flame.png')
+        self.GAMEOVERSURF = pygame.image.load_extended('gameOver.png')
         for i in range(self.n_big_stars):
             self.sprites['star_coords'].append(
                 (self.r.randint(20, self.WIDTH - 20),
@@ -110,7 +117,7 @@ class Game(object):
                 (self.r.randint(20, self.WIDTH - 20),
                  self.r.randint(20, self.GROUND_Y - 20))
             )
-        for i in range(0, self.WIDTH - 32, 48):
+        for i in range(0, self.WIDTH, 48):
             choice = self.r.choice(["hut", "tree"])
             if choice == "hut":
                 self.sprites['hutten'].append((i, self.GROUND_Y - 32))
@@ -118,88 +125,23 @@ class Game(object):
                 self.sprites['trees'].append((i, self.GROUND_Y - 64))
 
     def fill_black(self):
-        for i in range(self.n_big_stars):
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(int(self.sprites['star_coords'][i][0]),
-                                 self.sprites['star_coords'][i][1],
-                                 8,
-                                 8)
-            )
-        for i in range(self.n_small_stars):
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(int(self.sprites['slow_stars_coords'][i][0]),
-                                 self.sprites['slow_stars_coords'][i][1],
-                                 1,
-                                 1)
-            )
+        # for i in range(self.n_big_stars):
         self.DISPLAYSURF.fill(
             color.Color('Black'),
-            pygame.rect.Rect(100,
-                             self.heli_y,
-                             32,
-                             24)
+            pygame.rect.Rect(
+                self.DISPLAYSURF.get_rect()
+            )
         )
-        for proj in self.sprites['projectiles']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    proj[0],
-                    proj[1],
-                    self.TRACER_LENGTH,
-                    1))
-        for enemy in self.sprites['enemies']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    enemy[0],
-                    enemy[1],
-                    32,
-                    32)
-            )
-        for hut in self.sprites['hutten']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    hut[0],
-                    hut[1],
-                    32,
-                    32)
-            )
-        for tree in self.sprites['trees']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    tree[0],
-                    tree[1],
-                    32,
-                    64)
-            )
-        for b in self.sprites['bombs']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    int(b[0]),
-                    int(b[1]),
-                    16,
-                    16)
-            )
-        for fl in self.sprites['flame']:
-            self.DISPLAYSURF.fill(
-                color.Color('Black'),
-                pygame.rect.Rect(
-                    int(fl[0]),
-                    int(fl[1]),
-                    32,
-                    32)
-            )
 
     def init_scene(self):
-        for i in range(self.BOMBS_MAX):
-            self.DISPLAYSURF.blit(self.BOMBSURF, (1 + i * 17, 1))
         for i in range(self.n_big_stars):
-            self.DISPLAYSURF.blit(self.STARSURF, self.sprites['star_coords'][i])
+            self.DISPLAYSURF.fill(
+                color.Color('White'), pygame.rect.Rect(
+                    self.sprites['star_coords'][i][0],
+                    self.sprites['star_coords'][i][1],
+                    2,
+                    2)
+            )
         for i in range(self.n_small_stars):
             self.DISPLAYSURF.fill(
                 color.Color('Yellow'),
@@ -214,39 +156,60 @@ class Game(object):
             (self.heli_x, self.heli_y),
             pygame.rect.Rect(0, 0, 32, 24))
 
+    def game_over_animation(self):
+        self.DISPLAYSURF.blit(
+            self.GAMEOVERSURF,
+            pygame.rect.Rect(
+                self.WIDTH / 2 - 200,
+                -200 + int(self.gameover_counter),
+                400,
+                200
+            )
+        )
+        if self.gameover_counter < 400:
+            self.gameover_counter += 0.5
+
     def redraw_sprites(self):
-        for i in range(self.n_big_stars):
-            self.sprites['star_coords'][i] = (
-                divmod(
-                    self.sprites['star_coords'][i][0] - self.big_stars_speed,
-                    self.WIDTH
-                )[1],
-                self.sprites['star_coords'][i][1]
+        for i in range(self.ammo['bombs_left']):
+            self.DISPLAYSURF.blit(self.BOMBSURF, (1 + i * 17, 1))
+
+        self.sprites['star_coords'] = [
+            (divmod(
+                float(s[0]) - self.big_stars_speed,
+                self.WIDTH
+            )[1],
+             s[1])
+            for s in self.sprites['star_coords']]
+        for star in self.sprites['star_coords']:
+            self.DISPLAYSURF.fill(
+                color.Color('White'),
+                pygame.rect.Rect(
+                    (int(star[0]),
+                     star[1],
+                     2,
+                     2))
             )
-            self.DISPLAYSURF.blit(
-                self.STARSURF,
-                (int(self.sprites['star_coords'][i][0]),
-                 self.sprites['star_coords'][i][1])
-            )
-        for i in range(self.n_small_stars):
-            self.sprites['slow_stars_coords'][i] = (
-                divmod(
-                    self.sprites['slow_stars_coords'][i][0] - self.small_stars_speed,
-                    self.WIDTH
-                )[1],
-                self.sprites['slow_stars_coords'][i][1]
-            )
+
+        self.sprites['slow_stars_coords'] = [
+            (divmod(
+                float(s[0]) - self.small_stars_speed,
+                self.WIDTH
+            )[1],
+             s[1])
+            for s in self.sprites['slow_stars_coords']
+            ]
+        for s in self.sprites['slow_stars_coords']:
             self.DISPLAYSURF.fill(
                 color.Color('Yellow'),
                 pygame.rect.Rect(
-                    int(self.sprites['slow_stars_coords'][i][0]),
-                    self.sprites['slow_stars_coords'][i][1],
+                    int(s[0]),
+                    s[1],
                     1,
                     1)
             )
 
         self.sprites['projectiles'] = [
-            (p[0] + 3, p[1]) for p in self.sprites['projectiles']
+            (p[0] + self.bullet_speed, p[1]) for p in self.sprites['projectiles']
             if p[0] < self.WIDTH + 20
             ]
         for proj in self.sprites['projectiles']:
@@ -289,16 +252,16 @@ class Game(object):
             x.redraw_on_surf(self.DISPLAYSURF, self.particle_size)
 
         self.sprites['flame'] = [
-            (divmod(f[0] - 0.25 + 32, self.WIDTH + 32)[1] - 32, f[1])
+            (divmod(f[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, f[1])
             for f in self.sprites['flame']
             ]
 
         self.sprites['hutten'] = [
-            (divmod(h[0] - 0.25 + 32, self.WIDTH + 32)[1] - 32, h[1])
+            (divmod(h[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, h[1])
             for h in self.sprites['hutten']
             ]
         self.sprites['trees'] = [
-            (divmod(t[0] - 0.25 + 32, self.WIDTH + 32)[1] - 32, t[1])
+            (divmod(t[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, t[1])
             for t in self.sprites['trees']
             ]
 
@@ -316,7 +279,7 @@ class Game(object):
             )
 
         self.sprites['enemies'] = [
-            (e[0] - 0.3, e[1])
+            (e[0] - self.mig_speed, e[1])
             for e in self.sprites['enemies']
             if e[0] > -32
             ]
@@ -357,24 +320,24 @@ class Game(object):
 
         for e in self.sprites['enemies']:
             if (e[1] - 32 < self.heli_y < e[1] + 24) and (e[0] - 32 < self.heli_x < e[0] + 32):
-                self.endgame = True
+                self.endgame_lost = True
                 self.sprites['explosions'] += [
                     Explosion(self.heli_x + 16, self.heli_y + 12, init_v=0.7, n=250)]
                 self.heli_x = -1
                 self.heli_y = -1
 
-        if not self.endgame:
+        if not self.endgame_lost:
             self.heli_y_ += self.heli_v_y_
             self.heli_y = int(self.heli_y_)
             self.heli_v_y_ *= 0.96
-        if self.heli_frame_flag and not self.endgame:
+        if self.heli_frame_flag and not self.endgame_lost:
             x = 32
             self.heli_frame_flag = not self.heli_frame_flag
-        elif not self.endgame:
+        elif not self.endgame_lost:
             x = 0
             self.heli_frame_flag = not self.heli_frame_flag
 
-        if not self.endgame:
+        if not self.endgame_lost:
             self.DISPLAYSURF.blit(
                 self.HELISURF,
                 (100, self.heli_y),
@@ -382,12 +345,14 @@ class Game(object):
             )
 
         else:
-            self.endgame_counter += 1
-            if self.endgame_counter > 800:
-                self.ENDGAMESURF = pygame.Surface((self.WIDTH, self.HEIGHT))
-                self.ENDGAMESURF = self.ENDGAMESURF.convert_alpha()
-                self.ENDGAMESURF.fill((128, 0, 0, 128))
-                self.DISPLAYSURF.blit(self.ENDGAMESURF, pygame.rect.Rect(0, 0, self.WIDTH, self.HEIGHT))
+            self.game_over_animation()
+            pass
+            # self.endgame_counter += 1
+            # if self.endgame_counter > 800:
+            #     self.ENDGAMESURF = pygame.Surface((self.WIDTH, self.HEIGHT))
+            #     self.ENDGAMESURF = self.ENDGAMESURF.convert_alpha()
+            #     self.ENDGAMESURF.fill((128, 0, 0, 128))
+            #     self.DISPLAYSURF.blit(self.ENDGAMESURF, pygame.rect.Rect(0, 0, self.WIDTH, self.HEIGHT))
 
     def launch_enemy(self):
         enemy_y = self.r.randint(20, self.GROUND_Y - 64 - 20)
@@ -418,7 +383,13 @@ class Game(object):
                     self.up_flag = True
                     self.down_flag = False
                 if event.key == K_SPACE:
-                    self.fire_flag = True
+                    if not self.endgame_lost and not self.endgame_won:
+                        self.fire_flag = True
+                    else:
+                        pygame.quit()
+                        sys.exit(0)
+                if event.key == K_i:
+                    self.endgame_won = True
                 if event.key == K_m and self.ammo.get('bombs_left') > 0:
                     self.bomb_flag = True
             if event.type == KEYUP:
@@ -427,9 +398,35 @@ class Game(object):
                 if event.key == K_w:
                     self.up_flag = False
 
+    def launch_victory_fireworks(self):
+        self.gameover_counter += 1
+
+        if self.gameover_counter >= 200:
+            self.sprites['explosions'].append(
+                Explosion(
+                    self.r.randint(0, self.WIDTH),
+                    self.r.randint(0, self.HEIGHT), n=40, v_x=0, init_v=0.6
+                ))
+            self.gameover_counter = 0
+
+    def clear_sprites(self):
+        self.sprites['projectiles'] = []
+        self.sprites['enemies'] = []
+        self.sprites['hutten'] = []
+        self.sprites['trees'] = []
+        self.sprites['bombs'] = []
+        self.sprites['flame'] = []
+        # self.sprites['explosions'] = []
+        self.sprites['star_coords'] = []
+        self.sprites['slow_stars_coords'] = []
+        self.clear = True
+        self.heli_y_ = -32
+        self.ammo['bombs_left'] = 0
+
     def loop(self):
         self.init_scene()
         while True:
+            self.end = self.endgame_won or self.endgame_lost
             self.flame_counter += 1
             self.enemy_frame_counter += 1
             if self.enemy_frame_counter == self.enemy_frame_counter_MAX:
@@ -438,24 +435,33 @@ class Game(object):
             if self.flame_counter == self.flame_counter_MAX:
                 self.flame_counter = 0
                 self.shl = 32 - self.shl
-            if self.up_flag and not self.endgame:
+            if self.up_flag and not self.end:
                 self.heli_v_y_ -= 0.015
-            if self.down_flag and not self.endgame:
+            if self.down_flag and not self.end:
                 self.heli_v_y_ += 0.015
-            if self.fire_flag and not self.endgame:
+            if self.fire_flag and not self.end:
                 self.sprites['projectiles'].append((135, self.heli_y + 10))
                 self.fire_flag = not self.fire_flag
-            if self.bomb_flag and not self.endgame:
+            if self.bomb_flag and not self.end:
                 self.drop_bomb()
                 self.bomb_flag = not self.bomb_flag
 
             self.fill_black()
-            for ex in self.sprites['explosions']:
-                ex.fill_black_surf(self.DISPLAYSURF, self.particle_size)
+            # for ex in self.sprites['explosions']:
+            #     ex.fill_black_surf(self.DISPLAYSURF, self.particle_size)
 
             self.process_events()
 
             self.redraw_sprites()
+            if self.endgame_won:
+                if not self.clear:
+                    self.clear_sprites()
+                self.launch_victory_fireworks()
+
+            # if self.endgame_won and self.true_endgame:
+            #     self.true_endgame = False
+            #     self.clear_sprites()
+            #     self.launch_victory_fireworks()
 
             pygame.display.update()
 
