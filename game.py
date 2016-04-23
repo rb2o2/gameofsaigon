@@ -223,7 +223,7 @@ class Game(object):
             )
 
         flame_to_append = [
-            (92.0, self.GROUND_Y - 32) for b in self.sprites['bombs']
+            (b[0], self.GROUND_Y - 32) for b in self.sprites['bombs']
             if b[1] > (self.GROUND_Y - 16)
             ]
         self.sprites['flame'] = self.sprites['flame'] + flame_to_append
@@ -340,7 +340,7 @@ class Game(object):
         if not self.endgame_lost:
             self.DISPLAYSURF.blit(
                 self.HELISURF,
-                (100, self.heli_y),
+                (self.heli_x, self.heli_y),
                 pygame.rect.Rect(x, 0, 32, 24)
             )
 
@@ -359,7 +359,7 @@ class Game(object):
         self.sprites['enemies'].append((self.WIDTH, enemy_y))
 
     def drop_bomb(self):
-        self.sprites['bombs'].append((100, self.heli_y + 24, self.bomb_init_speed))
+        self.sprites['bombs'].append((self.heli_x, self.heli_y + 24, self.bomb_init_speed))
         self.ammo['bombs_left'] -= 1
         self.DISPLAYSURF.fill(
             color.Color('Black'),
