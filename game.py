@@ -5,8 +5,10 @@ import math
 import pygame, sys
 import random
 from pygame.locals import *
+from pygame.transform import rotate
 
 global counter
+
 
 class Explosion(object):
     def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi, v_x=0.3, max_frames=400.0, r=random.Random()):
@@ -67,10 +69,15 @@ class Game(object):
         self.heli_frame_flag = True
         self.up_flag = False
         self.down_flag = False
+        self.tangage_flag_up = False
+        self.tangage_flag_down = False
+        self.tangage_angle = 0
+        self.tangage_speed = 0
         self.heli_y_ = self.heli_y
         self.heli_x = 100
         self.fire_flag = False
         self.bomb_flag = False
+        self.tangagedSURF = None
 
         self.sprites = {}
         self.sprites['projectiles'] = []
@@ -85,6 +92,7 @@ class Game(object):
         self.clear = False
 
         self.heli_v_y_ = 0.0
+        self.v_x = 0.5
         self.enemy_frame_counter = 0
         self.enemy_frame_counter_MAX = 1000
         self.bomb_init_speed = 0.0035
@@ -96,6 +104,7 @@ class Game(object):
         self.ammo = {'bombs_left': self.BOMBS_MAX}
 
         pygame.init()
+        self.auxSURF = pygame.Surface((32, 24))
         self.DISPLAYSURF = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption('RETURN TO SAIGON')
 
@@ -175,7 +184,7 @@ class Game(object):
 
         self.sprites['star_coords'] = [
             (divmod(
-                float(s[0]) - self.big_stars_speed,
+                float(s[0]) - self.big_stars_speed + 0.02 * self.v_x,
                 self.WIDTH
             )[1],
              s[1])
@@ -192,7 +201,7 @@ class Game(object):
 
         self.sprites['slow_stars_coords'] = [
             (divmod(
-                float(s[0]) - self.small_stars_speed,
+                float(s[0]) - self.small_stars_speed + 0.02 * self.v_x,
                 self.WIDTH
             )[1],
              s[1])
@@ -209,18 +218,22 @@ class Game(object):
             )
 
         self.sprites['projectiles'] = [
-            (p[0] + self.bullet_speed, p[1]) for p in self.sprites['projectiles']
+            (p[0] + self.bullet_speed * math.cos(p[2]), p[1] + self.bullet_speed * math.sin(p[2]), p[2])
+            for p in self.sprites['projectiles']
             if p[0] < self.WIDTH + 20
             ]
         for proj in self.sprites['projectiles']:
-            self.DISPLAYSURF.fill(
-                color.Color('White'),
-                pygame.rect.Rect(
-                    proj[0],
-                    proj[1],
-                    20,
-                    1)
-            )
+            pygame.draw.aaline(self.DISPLAYSURF, pygame.Color('White'),
+                               (proj[0], proj[1]),
+                               (proj[0] + math.cos(proj[2]) * 20, proj[1] + math.sin(proj[2]) * 20))
+            # self.DISPLAYSURF.fill(
+            #     color.Color('White'),
+            #     pygame.rect.Rect(
+            #         proj[0],
+            #         proj[1],
+            #         20,
+            #         1)
+            # )
 
         flame_to_append = [
             (b[0], self.GROUND_Y - 32) for b in self.sprites['bombs']
@@ -252,16 +265,16 @@ class Game(object):
             x.redraw_on_surf(self.DISPLAYSURF, self.particle_size)
 
         self.sprites['flame'] = [
-            (divmod(f[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, f[1])
+            (divmod(f[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, f[1])
             for f in self.sprites['flame']
             ]
 
         self.sprites['hutten'] = [
-            (divmod(h[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, h[1])
+            (divmod(h[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, h[1])
             for h in self.sprites['hutten']
             ]
         self.sprites['trees'] = [
-            (divmod(t[0] - self.GROUND_SPEED + 32, self.WIDTH + 32)[1] - 32, t[1])
+            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
             for t in self.sprites['trees']
             ]
 
@@ -279,7 +292,7 @@ class Game(object):
             )
 
         self.sprites['enemies'] = [
-            (e[0] - self.mig_speed, e[1])
+            (e[0] - self.mig_speed + 0.01 * self.v_x, e[1])
             for e in self.sprites['enemies']
             if e[0] > -32
             ]
@@ -329,7 +342,8 @@ class Game(object):
         if not self.endgame_lost:
             self.heli_y_ += self.heli_v_y_
             self.heli_y = int(self.heli_y_)
-            self.heli_v_y_ *= 0.96
+            self.tangage_angle += self.tangage_speed * 0.1
+            self.heli_v_y_ *= 0.9
         if self.heli_frame_flag and not self.endgame_lost:
             x = 32
             self.heli_frame_flag = not self.heli_frame_flag
@@ -337,11 +351,13 @@ class Game(object):
             x = 0
             self.heli_frame_flag = not self.heli_frame_flag
 
+        self.auxSURF.blit(self.HELISURF, pygame.rect.Rect(x, 0, 32, 24))
+        self.tangagedSURF = rotate(self.auxSURF, self.tangage_angle)
         if not self.endgame_lost:
             self.DISPLAYSURF.blit(
-                self.HELISURF,
-                (self.heli_x, self.heli_y),
-                pygame.rect.Rect(x, 0, 32, 24)
+                self.tangagedSURF,
+                (self.heli_x, self.heli_y)
+                # pygame.rect.Rect(x, 0, 32, 24)
             )
 
         else:
@@ -392,11 +408,23 @@ class Game(object):
                     self.endgame_won = True
                 if event.key == K_m and self.ammo.get('bombs_left') > 0:
                     self.bomb_flag = True
+                if event.key == K_d:
+                    self.tangage_flag_up = True
+                    self.tangage_flag_down = False
+                if event.key == K_a:
+                    self.tangage_flag_up = False
+                    self.tangage_flag_down = True
+
             if event.type == KEYUP:
                 if event.key == K_s:
                     self.down_flag = False
                 if event.key == K_w:
                     self.up_flag = False
+                if event.key == K_d:
+                    self.tangage_flag_up = False
+                if event.key == K_a:
+                    self.tangage_flag_down = False
+
 
     def launch_victory_fireworks(self):
         self.gameover_counter += 1
@@ -440,11 +468,25 @@ class Game(object):
             if self.down_flag and not self.end:
                 self.heli_v_y_ += 0.015
             if self.fire_flag and not self.end:
-                self.sprites['projectiles'].append((135, self.heli_y + 10))
+                self.sprites['projectiles'].append((100, self.heli_y, -self.tangage_angle / 180 * math.pi))
                 self.fire_flag = not self.fire_flag
             if self.bomb_flag and not self.end:
                 self.drop_bomb()
                 self.bomb_flag = not self.bomb_flag
+            if self.tangage_flag_up:
+                self.tangage_speed += 0.5
+                # self.v_x += 0.05
+            elif self.tangage_flag_down:
+                self.tangage_speed -= 0.5
+                # self.v_x -= 0.05
+            else:
+                self.tangage_speed *= 0.95
+                self.tangage_angle *= 0.98
+
+            self.v_x = 0.5 + self.tangage_angle
+
+            self.tangage_speed = self.tangage_speed * 0.7  # - self.tangage_angle*0.02
+
 
             self.fill_black()
             # for ex in self.sprites['explosions']:
