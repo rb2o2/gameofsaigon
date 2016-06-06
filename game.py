@@ -48,6 +48,7 @@ class Explosion(object):
 
 class Game(object):
     def __init__(self):
+        # random refactoring
         self.endgame_counter = 0
         self.endgame_lost = False
         self.endgame_won = False
