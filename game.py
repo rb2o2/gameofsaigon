@@ -84,6 +84,7 @@ class Game(object):
         self.sprites['projectiles'] = []
         self.sprites['enemies'] = []
         self.sprites['hutten'] = []
+        self.sprites['sams'] = []
         self.sprites['trees'] = []
         self.sprites['bombs'] = []
         self.sprites['flame'] = []
@@ -117,6 +118,7 @@ class Game(object):
         self.BOMBSURF = pygame.image.load_extended('bomb.png')
         self.FLAMESURF = pygame.image.load_extended('flame.png')
         self.GAMEOVERSURF = pygame.image.load_extended('gameOver.png')
+        self.SAMSURF = pygame.image.load_extended('SAM.png')
         for i in range(self.n_big_stars):
             self.sprites['star_coords'].append(
                 (self.r.randint(20, self.WIDTH - 20),
@@ -128,11 +130,13 @@ class Game(object):
                  self.r.randint(20, self.GROUND_Y - 20))
             )
         for i in range(0, self.WIDTH, 48):
-            choice = self.r.choice(["hut", "tree"])
+            choice = self.r.choice(["hut", "tree", "SAM"])
             if choice == "hut":
                 self.sprites['hutten'].append((i, self.GROUND_Y - 32))
             elif choice == "tree":
                 self.sprites['trees'].append((i, self.GROUND_Y - 64))
+            elif choice == "SAM":
+                self.sprites['sams'].append((i, self.GROUND_Y - 32))
 
     def fill_black(self):
         # for i in range(self.n_big_stars):
@@ -278,6 +282,10 @@ class Game(object):
             (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
             for t in self.sprites['trees']
             ]
+        self.sprites['sams'] = [
+            (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, s[1])
+            for s in self.sprites['sams']
+            ]
 
         for h in self.sprites['hutten']:
             self.DISPLAYSURF.blit(self.HUTSURF, (int(h[0]), int(h[1])))
@@ -291,6 +299,10 @@ class Game(object):
                 (int(f[0]), int(f[1])),
                 pygame.rect.Rect(self.shl, 0, 32, 32)
             )
+        for s in self.sprites['sams']:
+            self.DISPLAYSURF.blit(
+                self.SAMSURF,
+                (int(s[0]), int(s[1])))
 
         self.sprites['enemies'] = [
             (e[0] - self.mig_speed + 0.01 * self.v_x, e[1])
