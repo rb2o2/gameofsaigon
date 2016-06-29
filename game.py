@@ -91,15 +91,19 @@ class Game(object):
         self.sprites['explosions'] = []
         self.sprites['star_coords'] = []
         self.sprites['slow_stars_coords'] = []
+        self.sprites['rockets'] = []
         self.clear = False
 
         self.heli_v_y_ = 0.0
         self.v_x = 0.5
         self.enemy_frame_counter = 0
         self.enemy_frame_counter_MAX = 1000
+        self.sam_fire_counter = 0
+        self.sam_fire_counter_MAX = 500
         self.bomb_init_speed = 0.0035
         self.bullet_speed = 3.5
         self.mig_speed = 0.63
+        self.rocket_speed = 0.92
         self.flame_counter_MAX = 25
         self.flame_counter = 0
         self.shl = 0
@@ -119,6 +123,7 @@ class Game(object):
         self.FLAMESURF = pygame.image.load_extended('flame.png')
         self.GAMEOVERSURF = pygame.image.load_extended('gameOver.png')
         self.SAMSURF = pygame.image.load_extended('SAM.png')
+        self.ROCKETSURF = pygame.image.load_extended('rocket.png')
         for i in range(self.n_big_stars):
             self.sprites['star_coords'].append(
                 (self.r.randint(20, self.WIDTH - 20),
@@ -314,6 +319,17 @@ class Game(object):
                 self.MIGSURF,
                 (int(enemy[0]), int(enemy[1]))
             )
+        self.sprites['rockets'] = [
+            (r[0] - self.rocket_speed + 0.01 * self.v_x, r[1] - self.rocket_speed)
+            for r in self.sprites['rockets']
+            if (r[0] > -16 and r[1] > -16)
+            ]
+
+        for rocket in self.sprites['rockets']:
+            self.DISPLAYSURF.blit(
+                self.ROCKETSURF,
+                (int(rocket[0]), int(rocket[1]))
+            )
 
         enemies_hit = []
 
@@ -352,6 +368,15 @@ class Game(object):
                 self.heli_x = -1
                 self.heli_y = -1
 
+        for r in self.sprites['rockets']:
+            if (r[1] - 32 < self.heli_y < r[1] + 16) and (r[0] - 32 < self.heli_x < r[0] + 16):
+                self.endgame_lost = True
+                self.sprites['explosions'] += [
+                    Explosion(self.heli_x + 16, self.heli_y + 12, init_v=0.7, n=250)
+                ]
+                self.heli_x = -1
+                self.heli_y = -1
+
         if not self.endgame_lost:
             self.heli_y_ += self.heli_v_y_
             self.heli_y = int(self.heli_y_)
@@ -363,6 +388,8 @@ class Game(object):
         elif not self.endgame_lost:
             x = 0
             self.heli_frame_flag = not self.heli_frame_flag
+        if self.endgame_lost:
+            x = 0
 
         self.auxSURF.blit(self.HELISURF, pygame.rect.Rect(x, 0, 32, 24))
         self.tangagedSURF = rotate(self.auxSURF, self.tangage_angle)
@@ -386,6 +413,9 @@ class Game(object):
     def launch_enemy(self):
         enemy_y = self.r.randint(20, self.GROUND_Y - 64 - 20)
         self.sprites['enemies'].append((self.WIDTH, enemy_y))
+
+    def sam_fire(self, coord_tuple):
+        self.sprites['rockets'].append(coord_tuple)
 
     def drop_bomb(self):
         self.sprites['bombs'].append((self.heli_x, self.heli_y + 24, self.bomb_init_speed))
@@ -470,9 +500,13 @@ class Game(object):
             self.end = self.endgame_won or self.endgame_lost
             self.flame_counter += 1
             self.enemy_frame_counter += 1
+            self.sam_fire_counter += 1
             if self.enemy_frame_counter == self.enemy_frame_counter_MAX:
                 self.launch_enemy()
                 self.enemy_frame_counter = 0
+            if self.sam_fire_counter == self.sam_fire_counter_MAX:
+                self.sam_fire(self.r.choice(self.sprites['sams']))
+                self.sam_fire_counter = 0
             if self.flame_counter == self.flame_counter_MAX:
                 self.flame_counter = 0
                 self.shl = 32 - self.shl
