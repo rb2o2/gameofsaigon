@@ -501,6 +501,8 @@ class Game(object):
         self.sprites['trees'] = []
         self.sprites['bombs'] = []
         self.sprites['flame'] = []
+        self.sprites['sams'] = []
+        self.sprites['rockets'] = []
         # self.sprites['explosions'] = []
         self.sprites['star_coords'] = []
         self.sprites['slow_stars_coords'] = []
@@ -518,7 +520,7 @@ class Game(object):
             if self.enemy_frame_counter == self.enemy_frame_counter_MAX:
                 self.launch_enemy()
                 self.enemy_frame_counter = 0
-            if self.sam_fire_counter == self.sam_fire_counter_MAX:
+            if self.sam_fire_counter == self.sam_fire_counter_MAX and len(self.sprites['sams']) > 0:
                 self.sam_fire(self.r.choice(self.sprites['sams']))
                 self.sam_fire_counter = 0
             if self.flame_counter == self.flame_counter_MAX:
