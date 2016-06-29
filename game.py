@@ -86,6 +86,7 @@ class Game(object):
         self.sprites['hutten'] = []
         self.sprites['sams'] = []
         self.sprites['trees'] = []
+        self.sprites['trees_damaged'] = []
         self.sprites['bombs'] = []
         self.sprites['flame'] = []
         self.sprites['explosions'] = []
@@ -124,6 +125,7 @@ class Game(object):
         self.GAMEOVERSURF = pygame.image.load_extended('gameOver.png')
         self.SAMSURF = pygame.image.load_extended('SAM.png')
         self.ROCKETSURF = pygame.image.load_extended('rocket.png')
+        self.PALMDAMAGED = pygame.image.load_extended('palmTree_damaged.png')
         for i in range(self.n_big_stars):
             self.sprites['star_coords'].append(
                 (self.r.randint(20, self.WIDTH - 20),
@@ -287,6 +289,10 @@ class Game(object):
             (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
             for t in self.sprites['trees']
             ]
+        self.sprites['trees_damaged'] = [
+            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
+            for t in self.sprites['trees_damaged']
+            ]
         self.sprites['sams'] = [
             (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, s[1])
             for s in self.sprites['sams']
@@ -298,6 +304,8 @@ class Game(object):
         for t in self.sprites['trees']:
             self.DISPLAYSURF.blit(self.PALMSURF, (int(t[0]), int(t[1])))
 
+        for t in self.sprites['trees_damaged']:
+            self.DISPLAYSURF.blit(self.PALMDAMAGED, (int(t[0]), int(t[1])))
         for f in self.sprites['flame']:
             self.DISPLAYSURF.blit(
                 self.FLAMESURF,
@@ -360,13 +368,19 @@ class Game(object):
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.35, n=60, max_frames=300))
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.17, n=30, max_frames=180.0))
 
+        for p in self.sprites['projectiles']:
+            for tree in self.sprites['trees']:
+                if tree[1] + 4 < p[1] < tree[1] - 4 + 64 and tree[0] + 4 < p[0] + 20 < tree[0] + 64:
+                    self.sprites['trees_damaged'].append(tree)
+                    self.sprites['trees'].remove(tree)
+
         for e in self.sprites['enemies']:
             if (e[1] - 32 < self.heli_y < e[1] + 24) and (e[0] - 32 < self.heli_x < e[0] + 32):
                 self.endgame_lost = True
                 self.sprites['explosions'] += [
                     Explosion(self.heli_x + 16, self.heli_y + 12, init_v=0.7, n=250)]
-                self.heli_x = -1
-                self.heli_y = -1
+                self.heli_x = -64
+                self.heli_y = -64
 
         for r in self.sprites['rockets']:
             if (r[1] - 32 < self.heli_y < r[1] + 16) and (r[0] - 32 < self.heli_x < r[0] + 16):
@@ -374,8 +388,8 @@ class Game(object):
                 self.sprites['explosions'] += [
                     Explosion(self.heli_x + 16, self.heli_y + 12, init_v=0.7, n=250)
                 ]
-                self.heli_x = -1
-                self.heli_y = -1
+                self.heli_x = -64
+                self.heli_y = -64
 
         if not self.endgame_lost:
             self.heli_y_ += self.heli_v_y_
