@@ -238,14 +238,6 @@ class Game(object):
             pygame.draw.aaline(self.DISPLAYSURF, pygame.Color('White'),
                                (proj[0], proj[1]),
                                (proj[0] + math.cos(proj[2]) * 20, proj[1] + math.sin(proj[2]) * 20))
-            # self.DISPLAYSURF.fill(
-            #     color.Color('White'),
-            #     pygame.rect.Rect(
-            #         proj[0],
-            #         proj[1],
-            #         20,
-            #         1)
-            # )
 
         flame_to_append = [
             (b[0], self.GROUND_Y - 32) for b in self.sprites['bombs']
@@ -417,12 +409,6 @@ class Game(object):
         else:
             self.game_over_animation()
             pass
-            # self.endgame_counter += 1
-            # if self.endgame_counter > 800:
-            #     self.ENDGAMESURF = pygame.Surface((self.WIDTH, self.HEIGHT))
-            #     self.ENDGAMESURF = self.ENDGAMESURF.convert_alpha()
-            #     self.ENDGAMESURF.fill((128, 0, 0, 128))
-            #     self.DISPLAYSURF.blit(self.ENDGAMESURF, pygame.rect.Rect(0, 0, self.WIDTH, self.HEIGHT))
 
     def launch_enemy(self):
         enemy_y = self.r.randint(20, self.GROUND_Y - 64 - 20)
@@ -552,8 +538,6 @@ class Game(object):
 
 
             self.fill_black()
-            # for ex in self.sprites['explosions']:
-            #     ex.fill_black_surf(self.DISPLAYSURF, self.particle_size)
 
             self.process_events()
 
@@ -563,10 +547,6 @@ class Game(object):
                     self.clear_sprites()
                 self.launch_victory_fireworks()
 
-            # if self.endgame_won and self.true_endgame:
-            #     self.true_endgame = False
-            #     self.clear_sprites()
-            #     self.launch_victory_fireworks()
 
             pygame.display.update()
 
