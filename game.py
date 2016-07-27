@@ -67,6 +67,7 @@ class Game(object):
         self.r = random.Random()
         self.gameover_counter = 0
 
+
         self.heli_frame_flag = True
         self.up_flag = False
         self.down_flag = False
@@ -83,6 +84,7 @@ class Game(object):
         self.sprites = {}
         self.sprites['projectiles'] = []
         self.sprites['enemies'] = []
+        self.sprites['mig_projectiles'] = []
         self.sprites['hutten'] = []
         self.sprites['sams'] = []
         self.sprites['trees'] = []
@@ -310,15 +312,28 @@ class Game(object):
                 (int(s[0]), int(s[1])))
 
         self.sprites['enemies'] = [
-            (e[0] - self.mig_speed + 0.01 * self.v_x, e[1])
+            (e[0] - self.mig_speed + 0.01 * self.v_x, e[1], e[2] + 1)
             for e in self.sprites['enemies']
             if e[0] > -32
             ]
+        self.sprites['mig_projectiles'] = [
+            (e[0] - 0.5 * self.bullet_speed + 0.01 * self.v_x, e[1])
+            for e in self.sprites['mig_projectiles']
+            if e[0] > -20
+            ]
+        for mig in self.sprites['enemies']:
+            if mig[2] % 300 == 0:
+                self.sprites['mig_projectiles'].append((mig[0] - 20, mig[1] + 16))
         for enemy in self.sprites['enemies']:
             self.DISPLAYSURF.blit(
                 self.MIGSURF,
                 (int(enemy[0]), int(enemy[1]))
             )
+        for proj in self.sprites['mig_projectiles']:
+            pygame.draw.aaline(self.DISPLAYSURF, pygame.Color('White'),
+                               (proj[0], proj[1]),
+                               (proj[0] + 20, proj[1]))
+
         self.sprites['rockets'] = [
             (r[0] - self.rocket_speed + 0.01 * self.v_x, r[1] - self.rocket_speed)
             for r in self.sprites['rockets']
@@ -412,7 +427,7 @@ class Game(object):
 
     def launch_enemy(self):
         enemy_y = self.r.randint(20, self.GROUND_Y - 64 - 20)
-        self.sprites['enemies'].append((self.WIDTH, enemy_y))
+        self.sprites['enemies'].append((self.WIDTH, enemy_y, 50))
 
     def sam_fire(self, coord_tuple):
         self.sprites['rockets'].append(coord_tuple)
@@ -483,6 +498,7 @@ class Game(object):
     def clear_sprites(self):
         self.sprites['projectiles'] = []
         self.sprites['enemies'] = []
+        self.sprites['mig_projectiles'] = []
         self.sprites['hutten'] = []
         self.sprites['trees'] = []
         self.sprites['bombs'] = []
