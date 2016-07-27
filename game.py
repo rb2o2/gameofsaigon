@@ -4,10 +4,40 @@
 import math
 import pygame, sys
 import random
+import json
 from pygame.locals import *
 from pygame.transform import rotate
 
 global counter
+
+
+class MissionControl(object):
+    def __init__(self):
+        self.spriteToCode = {
+            "SAM": 'sams',
+            "MiG": 'enemies'
+        }
+        self.currentMission = 1
+        f = open('mission.json', 'rt')
+        enc = json.JSONDecoder()
+        self.missions = enc.decode(''.join(f.readlines()))
+        self.current = {}
+        for a in self.missionGoal().keys():
+            self.current[a] = 0
+        f.close()
+
+    def missionGoal(self):
+        i = self.currentMission - 1
+        goal = self.missions[i]
+        result = {}
+        for key in goal.keys():
+            result[self.spriteToCode[key]] = goal[key]
+        return result
+
+    def down(self, spriteType):
+        self.current[spriteType] = self.current[spriteType] + 1
+
+
 
 
 class Explosion(object):
@@ -48,6 +78,7 @@ class Explosion(object):
 
 class Game(object):
     def __init__(self):
+        self.MC = MissionControl()
         # random refactoring
         self.endgame_counter = 0
         self.endgame_lost = False
@@ -195,6 +226,16 @@ class Game(object):
     def redraw_sprites(self):
         for i in range(self.ammo['bombs_left']):
             self.DISPLAYSURF.blit(self.BOMBSURF, (1 + i * 17, 1))
+
+        row = 0
+        for goal in self.MC.missionGoal().keys():
+            font = pygame.font.Font(pygame.font.get_default_font(), 16)
+            textSurf = font.render("{0} : {1}/{2}".format(goal, self.MC.current[goal], self.MC.missionGoal()[goal]),
+                                   False, pygame.color.Color('White'))
+            self.DISPLAYSURF.blit(textSurf, pygame.rect.Rect((self.WIDTH - textSurf.get_width(),
+                                                              row * textSurf.get_height(), textSurf.get_width(),
+                                                              textSurf.get_height())))
+            row += 1
 
         self.sprites['star_coords'] = [
             (divmod(
@@ -371,6 +412,7 @@ class Game(object):
             )
 
             self.sprites['enemies'].remove(mig)
+            self.MC.down('enemies')
             self.sprites['projectiles'].remove(p)
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.35, n=60, max_frames=300))
             self.sprites['explosions'].append(Explosion(mig[0] + 4, mig[1] + 16, init_v=0.17, n=30, max_frames=180.0))
