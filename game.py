@@ -40,6 +40,7 @@ class MissionControl(object):
 
 
 
+
 class Explosion(object):
     def __init__(self, x, y, n=20, init_v=0.9, alpha=math.pi, v_x=0.3, max_frames=400.0, r=random.Random()):
         self.particles = []
@@ -97,6 +98,8 @@ class Game(object):
         self.BOMBS_MAX = 8
         self.r = random.Random()
         self.gameover_counter = 0
+        self.mission_complete_counter = 0
+        self.mission_complete_flag = False
 
 
         self.heli_frame_flag = True
@@ -159,6 +162,81 @@ class Game(object):
         self.SAMSURF = pygame.image.load_extended('SAM.png')
         self.ROCKETSURF = pygame.image.load_extended('rocket.png')
         self.PALMDAMAGED = pygame.image.load_extended('palmTree_damaged.png')
+
+        self.start_mission(1)
+
+    def start_mission(self, m):
+        self.MC.currentMission = m
+        for a in self.MC.missionGoal().keys():
+            self.MC.current[a] = 0
+        self.endgame_counter = 0
+        self.endgame_lost = False
+        self.endgame_won = False
+        self.WIDTH = 800
+        self.HEIGHT = 600
+        self.n_big_stars = 40
+        self.n_small_stars = 100
+        self.heli_y = self.HEIGHT / 2
+        self.big_stars_speed = 0.4
+        self.small_stars_speed = 0.7
+        self.GROUND_SPEED = 0.25
+        self.GROUND_Y = 550
+        self.TRACER_LENGTH = 20
+        self.particle_size = 2
+        self.BOMBS_MAX = 8
+        self.r = random.Random()
+        self.gameover_counter = 0
+        self.mission_complete_counter = 0
+        self.mission_complete_flag = False
+
+        self.heli_frame_flag = True
+        self.up_flag = False
+        self.down_flag = False
+        self.tangage_flag_up = False
+        self.tangage_flag_down = False
+        self.tangage_angle = 0
+        self.tangage_speed = 0
+        self.heli_y_ = self.heli_y
+        self.heli_x = 100
+        self.fire_flag = False
+        self.bomb_flag = False
+        self.tangagedSURF = None
+
+        self.sprites = {}
+        self.sprites['projectiles'] = []
+        self.sprites['enemies'] = []
+        self.sprites['mig_projectiles'] = []
+        self.sprites['hutten'] = []
+        self.sprites['sams'] = []
+        self.sprites['trees'] = []
+        self.sprites['trees_damaged'] = []
+        self.sprites['bombs'] = []
+        self.sprites['flame'] = []
+        self.sprites['explosions'] = []
+        self.sprites['star_coords'] = []
+        self.sprites['slow_stars_coords'] = []
+        self.sprites['rockets'] = []
+        self.clear = False
+
+        self.heli_v_y_ = 0.0
+        self.v_x = 0.5
+        self.enemy_frame_counter = 0
+        self.enemy_frame_counter_MAX = 1000
+        self.sam_fire_counter = 0
+        self.sam_fire_counter_MAX = 500
+        self.bomb_init_speed = 0.0035
+        self.bullet_speed = 3.5
+        self.mig_speed = 0.63
+        self.rocket_speed = 0.92
+        self.flame_counter_MAX = 25
+        self.flame_counter = 0
+        self.shl = 0
+        self.ammo = {'bombs_left': self.BOMBS_MAX}
+        self.populate_sky()
+        self.populate_ground()
+        self.init_scene()
+
+    def populate_sky(self):
         for i in range(self.n_big_stars):
             self.sprites['star_coords'].append(
                 (self.r.randint(20, self.WIDTH - 20),
@@ -169,6 +247,8 @@ class Game(object):
                 (self.r.randint(20, self.WIDTH - 20),
                  self.r.randint(20, self.GROUND_Y - 20))
             )
+
+    def populate_ground(self):
         for i in range(0, self.WIDTH, 48):
             choice = self.r.choice(["hut", "tree", "SAM"])
             if choice == "hut":
@@ -440,6 +520,17 @@ class Game(object):
                 self.heli_x = -64
                 self.heli_y = -64
 
+        if not self.mission_complete_flag:
+            self.mission_complete_flag = True
+            for foetype in self.MC.missionGoal().keys():
+                if self.MC.missionGoal()[foetype] > self.MC.current[foetype]:
+                    self.mission_complete_flag = False
+        if self.mission_complete_flag:
+            self.mission_complete_counter += 1
+        if self.mission_complete_counter == 80:
+            self.endgame_won = True
+
+
         if not self.endgame_lost:
             self.heli_y_ += self.heli_v_y_
             self.heli_y = int(self.heli_y_)
@@ -501,6 +592,9 @@ class Game(object):
                 if event.key == K_SPACE:
                     if not self.endgame_lost and not self.endgame_won:
                         self.fire_flag = True
+                    elif self.endgame_won and not self.MC.currentMission >= len(self.MC.missions):
+                        self.MC.currentMission += 1
+                        self.start_mission(self.MC.currentMission)
                     else:
                         pygame.quit()
                         sys.exit(0)
