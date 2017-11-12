@@ -11,6 +11,19 @@ from pygame.transform import rotate
 global counter
 
 
+class anim_seq(object):
+    pass
+
+
+class GameObject(object):
+    def __init__(self, config):
+        self.frames = config['frame_seq']
+        self.x = config['x']
+        self.y = config['y']
+        self.v_x = config['v_x']
+        self.v_y = config['v_y']
+
+
 class MissionControl(object):
     def __init__(self):
         self.spriteToCode = {
@@ -36,9 +49,6 @@ class MissionControl(object):
 
     def down(self, spriteType):
         self.current[spriteType] = self.current[spriteType] + 1
-
-
-
 
 
 class Explosion(object):
@@ -97,10 +107,9 @@ class Game(object):
         self.particle_size = 2
         self.BOMBS_MAX = 8
         self.r = random.Random()
-        self.gameover_counter = 0
+        self.game_over_counter = 0
         self.mission_complete_counter = 0
         self.mission_complete_flag = False
-
 
         self.heli_frame_flag = True
         self.up_flag = False
@@ -115,20 +124,21 @@ class Game(object):
         self.bomb_flag = False
         self.tangagedSURF = None
 
-        self.sprites = {}
-        self.sprites['projectiles'] = []
-        self.sprites['enemies'] = []
-        self.sprites['mig_projectiles'] = []
-        self.sprites['hutten'] = []
-        self.sprites['sams'] = []
-        self.sprites['trees'] = []
-        self.sprites['trees_damaged'] = []
-        self.sprites['bombs'] = []
-        self.sprites['flame'] = []
-        self.sprites['explosions'] = []
-        self.sprites['star_coords'] = []
-        self.sprites['slow_stars_coords'] = []
-        self.sprites['rockets'] = []
+        self.sprites = {
+            'projectiles': [],
+            'enemies': [],
+            'mig_projectiles': [],
+            'hutten': [],
+            'sams': [],
+            'trees': [],
+            'trees_damaged': [],
+            'bombs': [],
+            'flame': [],
+            'explosions': [],
+            'star_coords': [],
+            'slow_stars_coords': [],
+            'rockets': []
+        }
         self.clear = False
 
         self.heli_v_y_ = 0.0
@@ -185,7 +195,7 @@ class Game(object):
         self.particle_size = 2
         self.BOMBS_MAX = 8
         self.r = random.Random()
-        self.gameover_counter = 0
+        self.game_over_counter = 0
         self.mission_complete_counter = 0
         self.mission_complete_flag = False
 
@@ -202,20 +212,21 @@ class Game(object):
         self.bomb_flag = False
         self.tangagedSURF = None
 
-        self.sprites = {}
-        self.sprites['projectiles'] = []
-        self.sprites['enemies'] = []
-        self.sprites['mig_projectiles'] = []
-        self.sprites['hutten'] = []
-        self.sprites['sams'] = []
-        self.sprites['trees'] = []
-        self.sprites['trees_damaged'] = []
-        self.sprites['bombs'] = []
-        self.sprites['flame'] = []
-        self.sprites['explosions'] = []
-        self.sprites['star_coords'] = []
-        self.sprites['slow_stars_coords'] = []
-        self.sprites['rockets'] = []
+        self.sprites = {
+            'projectiles': [],
+            'enemies': [],
+            'mig_projectiles': [],
+            'hutten': [],
+            'sams': [],
+            'trees': [],
+            'trees_damaged': [],
+            'bombs': [],
+            'flame': [],
+            'explosions': [],
+            'star_coords': [],
+            'slow_stars_coords': [],
+            'rockets': []
+        }
         self.clear = False
 
         self.heli_v_y_ = 0.0
@@ -295,13 +306,13 @@ class Game(object):
             self.GAMEOVERSURF,
             pygame.rect.Rect(
                 self.WIDTH / 2 - 200,
-                -200 + int(self.gameover_counter),
+                -200 + int(self.game_over_counter),
                 400,
                 200
             )
         )
-        if self.gameover_counter < 400:
-            self.gameover_counter += 0.5
+        if self.game_over_counter < 400:
+            self.game_over_counter += 0.5
 
     def redraw_sprites(self):
         for i in range(self.ammo['bombs_left']):
@@ -432,8 +443,9 @@ class Game(object):
                 self.SAMSURF,
                 (int(s[0]), int(s[1])))
 
+
         self.sprites['enemies'] = [
-            (e[0] - self.mig_speed + 0.01 * self.v_x, e[1], e[2] + 1)
+            (e[0] - self.mig_speed + 0.01 * self.v_x, e[1] + 0.22 * (math.sin(e[2]/113.0)), e[2] + 1)
             for e in self.sprites['enemies']
             if e[0] > -32
             ]
@@ -621,15 +633,15 @@ class Game(object):
 
 
     def launch_victory_fireworks(self):
-        self.gameover_counter += 1
+        self.game_over_counter += 1
 
-        if self.gameover_counter >= 200:
+        if self.game_over_counter >= 200:
             self.sprites['explosions'].append(
                 Explosion(
                     self.r.randint(0, self.WIDTH),
                     self.r.randint(0, self.HEIGHT), n=40, v_x=0, init_v=0.6
                 ))
-            self.gameover_counter = 0
+            self.game_over_counter = 0
 
     def clear_sprites(self):
         self.sprites['projectiles'] = []
