@@ -130,6 +130,7 @@ class Game(object):
             'mig_projectiles': [],
             'hutten': [],
             'sams': [],
+            'rls': [],
             'trees': [],
             'trees_damaged': [],
             'bombs': [],
@@ -137,7 +138,8 @@ class Game(object):
             'explosions': [],
             'star_coords': [],
             'slow_stars_coords': [],
-            'rockets': []
+            'rockets': [],
+            'vezdehod':[]
         }
         self.clear = False
 
@@ -163,6 +165,7 @@ class Game(object):
 
         # self.STARSURF = pygame.image.load_extended('star.bmp')
         self.HELISURF = pygame.image.load_extended('copter.png')
+        self.RLSSURF = pygame.image.load_extended('rls.png')
         self.MIGSURF = pygame.image.load_extended('Mig15.png')
         self.HUTSURF = pygame.image.load_extended('hut.png')
         self.PALMSURF = pygame.image.load_extended('palmTree.png')
@@ -172,6 +175,7 @@ class Game(object):
         self.SAMSURF = pygame.image.load_extended('SAM.png')
         self.ROCKETSURF = pygame.image.load_extended('rocket.png')
         self.PALMDAMAGED = pygame.image.load_extended('palmTree_damaged.png')
+        self.VEZDESURF = pygame.image.load_extended('vezdehod.png')
 
         self.start_mission(1)
 
@@ -218,6 +222,8 @@ class Game(object):
             'mig_projectiles': [],
             'hutten': [],
             'sams': [],
+            'rls': [],
+            'vezdehod':[],
             'trees': [],
             'trees_damaged': [],
             'bombs': [],
@@ -260,14 +266,18 @@ class Game(object):
             )
 
     def populate_ground(self):
-        for i in range(0, self.WIDTH, 48):
-            choice = self.r.choice(["hut", "tree", "SAM"])
+        for i in range(0, self.WIDTH*13, 48):
+            choice = self.r.choice(["hut", "tree", "SAM", "rls","vezde"])
             if choice == "hut":
                 self.sprites['hutten'].append((i, self.GROUND_Y - 32))
             elif choice == "tree":
                 self.sprites['trees'].append((i, self.GROUND_Y - 64))
             elif choice == "SAM":
                 self.sprites['sams'].append((i, self.GROUND_Y - 32))
+            elif choice == 'rls':
+                self.sprites['rls'].append((i, self.GROUND_Y - 32))
+            elif choice == 'vezde':
+                self.sprites['vezdehod'].append((i, self.GROUND_Y - 32))
 
     def fill_black(self):
         # for i in range(self.n_big_stars):
@@ -403,26 +413,34 @@ class Game(object):
             x.redraw_on_surf(self.DISPLAYSURF, self.particle_size)
 
         self.sprites['flame'] = [
-            (divmod(f[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, f[1])
+            (divmod(f[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH*13 + 32)[1] - 32, f[1])
             for f in self.sprites['flame']
             ]
 
         self.sprites['hutten'] = [
-            (divmod(h[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, h[1])
+            (divmod(h[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH*13 + 32)[1] - 32, h[1])
             for h in self.sprites['hutten']
             ]
         self.sprites['trees'] = [
-            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
+            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH*13 + 32)[1] - 32, t[1])
             for t in self.sprites['trees']
             ]
         self.sprites['trees_damaged'] = [
-            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, t[1])
+            (divmod(t[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH*13 + 32)[1] - 32, t[1])
             for t in self.sprites['trees_damaged']
             ]
         self.sprites['sams'] = [
-            (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH + 32)[1] - 32, s[1])
+            (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH*13 + 32)[1] - 32, s[1])
             for s in self.sprites['sams']
             ]
+        self.sprites['rls'] = [
+            (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH * 13 + 32)[1] - 32, s[1])
+            for s in self.sprites['rls']
+        ]
+        self.sprites['vezdehod'] = [
+            (divmod(s[0] - self.GROUND_SPEED + 0.02 * self.v_x + 32, self.WIDTH * 13 + 32)[1] - 32, s[1])
+            for s in self.sprites['vezdehod']
+        ]
 
         for h in self.sprites['hutten']:
             self.DISPLAYSURF.blit(self.HUTSURF, (int(h[0]), int(h[1])))
@@ -432,16 +450,25 @@ class Game(object):
 
         for t in self.sprites['trees_damaged']:
             self.DISPLAYSURF.blit(self.PALMDAMAGED, (int(t[0]), int(t[1])))
+
+        for s in self.sprites['sams']:
+            self.DISPLAYSURF.blit(
+                self.SAMSURF,
+                (int(s[0]), int(s[1])))
+        for s in self.sprites['rls']:
+            self.DISPLAYSURF.blit(
+                self.RLSSURF,
+                (int(s[0]), int(s[1])))
+        for s in self.sprites['vezdehod']:
+            self.DISPLAYSURF.blit(
+                self.VEZDESURF,
+                (int(s[0]), int(s[1])))
         for f in self.sprites['flame']:
             self.DISPLAYSURF.blit(
                 self.FLAMESURF,
                 (int(f[0]), int(f[1])),
                 pygame.rect.Rect(self.shl, 0, 32, 32)
             )
-        for s in self.sprites['sams']:
-            self.DISPLAYSURF.blit(
-                self.SAMSURF,
-                (int(s[0]), int(s[1])))
 
 
         self.sprites['enemies'] = [
